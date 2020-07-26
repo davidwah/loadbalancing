@@ -1,0 +1,31 @@
+/ip firewall nat
+add action=masquerade chain=srcnat out-interface=ether1-ISP-1
+add action=masquerade chain=srcnat out-interface=ether2-ISP-2
+
+
+/ip firewall mangle
+add action=mark-connection chain=prerouting connection-mark=no-mark \
+    in-interface=ether1-ISP-A new-connection-mark=isp-A passthrough=yes
+add action=mark-connection chain=prerouting connection-mark=no-mark \
+    in-interface=ether2-ISP-2 new-connection-mark=isp-B passthrough=yes
+add action=mark-connection chain=prerouting connection-mark=no-mark \
+    in-interface=ether3-swicth new-connection-mark=isp-A passthrough=yes \
+    per-connection-classifier=both-addresses-and-ports:2/0
+add action=mark-connection chain=prerouting connection-mark=no-mark \
+    in-interface=ether3-swicth new-connection-mark=isp-B passthrough=yes \
+    per-connection-classifier=both-addresses-and-ports:2/1
+add action=mark-routing chain=prerouting connection-mark=isp-A in-interface=\
+    ether3-swicth new-routing-mark=to_ISPA passthrough=yes
+add action=mark-routing chain=prerouting connection-mark=isp-B in-interface=\
+    ether3-swicth new-routing-mark=to_ISPB passthrough=yes
+add action=mark-routing chain=output connection-mark=isp-A new-routing-mark=\
+    to_ISPA passthrough=yes
+add action=mark-routing chain=output connection-mark=isp-B new-routing-mark=\
+    to_ISPB passthrough=yes
+
+
+/ip route
+add check-gateway=ping distance=1 gateway=(IP_Gateway-1) routing-mark=to_ISPA
+add check-gateway=ping distance=1 gateway=(IP_Gateway-2) routing-mark=to_ISPB
+add check-gateway=ping distance=1 gateway=(IP_Gateway-1)
+add check-gateway=ping distance=1 gateway=(IP_Gateway-2)
